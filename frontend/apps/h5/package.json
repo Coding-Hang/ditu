@@ -1,0 +1,27 @@
+{
+  "name": "@ditu/app-h5",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit",
+    "lint": "vue-tsc -p tsconfig.json --noEmit",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@ditu/api-client": "workspace:*",
+    "@ditu/types": "workspace:*",
+    "@ditu/ui-shared": "workspace:*",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "element-plus": "^2.8.4",
+    "pinia": "^2.2.2",
+    "vite": "^5.4.2",
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vue-tsc": "^2.0.29"
+  }
+}

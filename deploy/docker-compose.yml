@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ditu
+      POSTGRES_USER: ditu
+      POSTGRES_PASSWORD: ditu
+    ports:
+      - "5432:5432"
+    volumes:
+      - ditu-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ditu -d ditu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ditu
+      SPRING_DATASOURCE_USERNAME: ditu
+      SPRING_DATASOURCE_PASSWORD: ditu
+      DITU_AUTH_TOKEN_SECRET: local-compose-token-secret-change-me
+      DITU_DEFAULT_MODEL_BASE_URL: http://host.docker.internal:11434/v1
+      DITU_DEFAULT_MODEL_NAME: ditu-default
+      DITU_DEFAULT_MODEL_AUTH_TYPE: NONE
+      DITU_EMBEDDING_MODEL: mock-embedding
+      DITU_FILE_STORAGE_ROOT: /app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ditu-uploads:/app/data/uploads
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - backend
+    ports:
+      - "8088:80"
+    volumes:
+      - ../frontend/apps/h5/dist:/usr/share/nginx/html/h5:ro
+      - ../frontend/apps/admin/dist:/usr/share/nginx/html/admin:ro
+      - ../frontend/apps/miniprogram/dist:/usr/share/nginx/html/mini:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  ditu-postgres:
+  ditu-uploads:

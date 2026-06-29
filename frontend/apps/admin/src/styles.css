@@ -1,0 +1,47 @@
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+  color: #1d2733;
+  background: #f4f6f8;
+}
+
+.shell {
+  min-height: 100vh;
+}
+
+.nav {
+  background: #fff;
+  border-right: 1px solid #d7dde5;
+}
+
+.brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-weight: 700;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+}
