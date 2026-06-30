@@ -27,6 +27,13 @@ export class ApiError extends Error {
   }
 }
 
+export interface ApiErrorDetail {
+  code: string
+  message: string
+  status: number
+  path: string
+}
+
 export interface TokenStore {
   accessToken: string
   refreshToken: string
@@ -130,8 +137,8 @@ export class DituApiClient {
     return this.request<ModelConfigDto>(`/api/v1/admin/users/${userId}/model-config`, { method: 'PUT', body: payload })
   }
 
-  async testModelConfig(userId: number) {
-    return this.request<ModelConfigDto>(`/api/v1/admin/users/${userId}/model-config/test`, { method: 'POST', body: { message: 'ping' } })
+  async testModelConfig(userId: number, message = '请仅回复 OK') {
+    return this.request<ModelConfigDto>(`/api/v1/admin/users/${userId}/model-config/test`, { method: 'POST', body: { message } })
   }
 
   async disableModelConfig(userId: number) {
@@ -190,11 +197,14 @@ export class DituApiClient {
 
   async streamRun(conversationId: number, runId: number, onEvent: EventHandler, lastEventId?: string) {
     // EventSource 不能设置 Authorization 头，所以用 fetch 读取 text/event-stream，确保 SSE 也受 Token 保护。
-    const response = await fetch(`${this.baseUrl}/api/v1/conversations/${conversationId}/runs/${runId}/events`, {
+    const path = `/api/v1/conversations/${conversationId}/runs/${runId}/events`
+    const response = await fetch(`${this.baseUrl}${path}`, {
       headers: this.sseHeaders(lastEventId)
     })
     if (!response.ok || !response.body) {
-      throw new ApiError('SSE_FAILED', '流式连接失败', response.status)
+      const detail = { code: response.status === 401 ? 'UNAUTHORIZED' : 'SSE_FAILED', message: '流式连接失败', status: response.status, path }
+      emitApiError(detail)
+      throw new ApiError(detail.code, detail.message, detail.status)
     }
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
@@ -231,9 +241,10 @@ export class DituApiClient {
       ...requestInit,
       headers
     })
-    const json = (await response.json()) as ApiResponse<T>
+    const json = await parseApiResponse<T>(response)
     if (!response.ok || !json.success) {
       // Token 失效、次数不足、权限不足等稳定错误码在这里统一抛给 Pinia Store 和页面处理。
+      emitApiError({ code: json.code, message: json.message, status: response.status, path })
       throw new ApiError(json.code, json.message, response.status)
     }
     return json.data
@@ -263,7 +274,33 @@ function parseSseChunk(chunk: string): SseEvent | null {
   const id = lines.find(line => line.startsWith('id:'))?.slice(3).trim()
   const data = lines.find(line => line.startsWith('data:'))?.slice(5).trim()
   if (!event || !id || !data) return null
-  return { event, id, data: JSON.parse(data) as Record<string, unknown> }
+  try {
+    return { event, id, data: JSON.parse(data) as Record<string, unknown> }
+  } catch {
+    return null
+  }
+}
+
+async function parseApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  try {
+    return (await response.json()) as ApiResponse<T>
+  } catch {
+    return {
+      success: false,
+      code: response.status === 401 ? 'UNAUTHORIZED' : 'HTTP_ERROR',
+      message: response.ok ? '接口响应格式异常' : `接口请求失败 (${response.status})`,
+      data: undefined as T,
+      requestId: ''
+    }
+  }
+}
+
+function emitApiError(detail: ApiErrorDetail) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent<ApiErrorDetail>('ditu:api-error', { detail }))
+  if (detail.status === 401 || detail.code === 'UNAUTHORIZED') {
+    window.dispatchEvent(new CustomEvent<ApiErrorDetail>('ditu:unauthorized', { detail }))
+  }
 }
 
 export const apiClient = new DituApiClient()

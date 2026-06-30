@@ -12,21 +12,33 @@ const detail = ref<TicketDetailDto | null>(null)
 const reply = ref('')
 
 async function load() {
-  const page = await apiClient.tickets()
-  tickets.value = page.records
-  const id = Number(route.params.ticketId || tickets.value[0]?.id || 0)
-  if (id) detail.value = await apiClient.ticketDetail(id)
+  try {
+    const page = await apiClient.tickets()
+    tickets.value = page.records
+    const id = Number(route.params.ticketId || tickets.value[0]?.id || 0)
+    if (id) detail.value = await apiClient.ticketDetail(id)
+  } catch {
+    // 全局 API 错误监听负责提示；工单页保持当前内容。
+  }
 }
 
 async function sendReply() {
   if (!detail.value || !reply.value.trim()) return
-  detail.value = await apiClient.replyTicket(detail.value.ticket.id, reply.value)
-  reply.value = ''
+  try {
+    detail.value = await apiClient.replyTicket(detail.value.ticket.id, reply.value)
+    reply.value = ''
+  } catch {
+    // 回复失败时保留输入内容，方便用户重试。
+  }
 }
 
 async function selectTicket(id: number) {
-  await router.push(`/tickets/${id}`)
-  detail.value = await apiClient.ticketDetail(id)
+  try {
+    await router.push(`/tickets/${id}`)
+    detail.value = await apiClient.ticketDetail(id)
+  } catch {
+    // 全局 API 错误监听负责提示。
+  }
 }
 
 onMounted(load)

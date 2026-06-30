@@ -6,7 +6,11 @@ import { useChatStore } from '../stores/chat'
 const chat = useChatStore()
 const router = useRouter()
 
-onMounted(chat.loadConversations)
+onMounted(() => {
+  void chat.loadConversations().catch(() => {
+    // API client 已统一提示错误，这里避免未处理 Promise 影响页面。
+  })
+})
 </script>
 
 <template>

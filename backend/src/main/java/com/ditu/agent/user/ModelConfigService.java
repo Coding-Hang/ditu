@@ -1,12 +1,15 @@
 package com.ditu.agent.user;
 
-import com.ditu.agent.agent.llm.ModelConnectionResolver;
+import com.ditu.agent.agent.core.AgentRunCommand.MemoryMessage;
+import com.ditu.agent.agent.llm.ModelConnection;
 import com.ditu.agent.common.BusinessException;
 import com.ditu.agent.common.ErrorCode;
 import com.ditu.agent.infra.AuditService;
 import com.ditu.agent.infra.CryptoService;
+import com.ditu.agent.infra.OpenAiCompatibleChatClient;
 import com.ditu.agent.user.UserDtos.ModelConfigDto;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,14 +24,14 @@ public class ModelConfigService {
   private final UserModelConfigRepository repository;
   private final CryptoService cryptoService;
   private final AuditService auditService;
-  private final ModelConnectionResolver resolver;
+  private final OpenAiCompatibleChatClient chatClient;
 
   public ModelConfigService(UserModelConfigRepository repository, CryptoService cryptoService,
-                            AuditService auditService, ModelConnectionResolver resolver) {
+                            AuditService auditService, OpenAiCompatibleChatClient chatClient) {
     this.repository = repository;
     this.cryptoService = cryptoService;
     this.auditService = auditService;
-    this.resolver = resolver;
+    this.chatClient = chatClient;
   }
 
   public ModelConfigDto get(Long userId) {
@@ -56,12 +59,21 @@ public class ModelConfigService {
   public ModelConfigDto test(Long userId, String message, Long actorUserId) {
     var config = repository.findInternalByUserId(userId)
         .orElseThrow(() -> new BusinessException(ErrorCode.MODEL_CONFIG_NOT_FOUND, "用户模型链接不存在"));
-    String status = config.baseUrl() != null && !config.baseUrl().isBlank() ? "SUCCESS" : "FAILED";
-    String resultMessage = status.equals("SUCCESS") ? "连接成功: " + config.modelName() : "模型地址为空";
-    repository.updateTestResult(userId, status, resultMessage);
-    auditService.record(actorUserId, "USER_MODEL_TEST", "APP_USER_MODEL_CONFIG", config.id(),
-        Map.of("userId", userId, "status", status, "message", message == null ? "ping" : message));
-    if ("FAILED".equals(status)) {
+    String prompt = message == null || message.isBlank() ? "请仅回复 OK" : message;
+    try {
+      var connection = new ModelConnection(config.id(), config.baseUrl(), config.modelName(), config.authType(),
+          cryptoService.decrypt(config.apiKeyCiphertext()), false);
+      // 测试连接复用 Agent run 的 OpenAI-compatible 客户端，确保管理端按钮验证的就是实际运行链路。
+      String answer = chatClient.chat(connection, List.<MemoryMessage>of(), prompt);
+      String resultMessage = "连接成功: " + abbreviate(answer, 120);
+      repository.updateTestResult(userId, "SUCCESS", resultMessage);
+      auditService.record(actorUserId, "USER_MODEL_TEST", "APP_USER_MODEL_CONFIG", config.id(),
+          Map.of("userId", userId, "status", "SUCCESS", "message", prompt));
+    } catch (Exception ex) {
+      String resultMessage = "连接失败: " + abbreviate(ex.getMessage(), 160);
+      repository.updateTestResult(userId, "FAILED", resultMessage);
+      auditService.record(actorUserId, "USER_MODEL_TEST", "APP_USER_MODEL_CONFIG", config.id(),
+          Map.of("userId", userId, "status", "FAILED", "message", prompt));
       throw new BusinessException(ErrorCode.MODEL_CONNECTION_FAILED, resultMessage);
     }
     return get(userId);
@@ -82,6 +94,14 @@ public class ModelConfigService {
     } catch (Exception ex) {
       throw new BusinessException(ErrorCode.VALIDATION_ERROR, "模型地址必须是 http 或 https");
     }
+  }
+
+  private String abbreviate(String value, int maxLength) {
+    if (value == null || value.isBlank()) {
+      return "无返回内容";
+    }
+    String normalized = value.replaceAll("\\s+", " ").trim();
+    return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength) + "...";
   }
 
   public record SaveModelConfigCommand(String configName, String providerCode, String baseUrl, String modelName,

@@ -6,7 +6,11 @@ import { onMounted, ref } from 'vue'
 const plans = ref<PlanDto[]>([])
 
 onMounted(async () => {
-  plans.value = await apiClient.plans(true)
+  try {
+    plans.value = await apiClient.plans(true)
+  } catch {
+    // 全局 API 错误监听负责提示。
+  }
 })
 </script>
 

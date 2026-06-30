@@ -9,13 +9,21 @@ const reason = ref('线下购买次数')
 const ledgers = ref<QuotaLedgerDto[]>([])
 
 async function load() {
-  const page = await apiClient.quotaLedgers(userId.value)
-  ledgers.value = page.records
+  try {
+    const page = await apiClient.quotaLedgers(userId.value)
+    ledgers.value = page.records
+  } catch {
+    // 全局 API 错误监听负责提示，流水保留上一次成功结果。
+  }
 }
 
 async function adjust() {
-  await apiClient.adjustQuota(userId.value, delta.value, reason.value)
-  await load()
+  try {
+    await apiClient.adjustQuota(userId.value, delta.value, reason.value)
+    await load()
+  } catch {
+    // 调整失败时不刷新列表，避免误导管理员。
+  }
 }
 </script>
 

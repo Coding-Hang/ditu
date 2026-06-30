@@ -21,6 +21,14 @@ export const useMiniAuthStore = defineStore('mini-auth', {
       localStorage.setItem('ditu.mini.accessToken', this.accessToken)
       localStorage.setItem('ditu.mini.refreshToken', this.refreshToken)
       this.hydrateClient()
+    },
+    logout() {
+      this.accessToken = ''
+      this.refreshToken = ''
+      this.user = null
+      localStorage.removeItem('ditu.mini.accessToken')
+      localStorage.removeItem('ditu.mini.refreshToken')
+      apiClient.setTokens(null)
     }
   }
 })

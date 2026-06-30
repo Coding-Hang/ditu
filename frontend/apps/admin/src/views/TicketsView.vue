@@ -11,25 +11,45 @@ const status = ref('RESOLVED')
 const assignedTo = ref(1)
 
 async function load() {
-  const page = await apiClient.adminTickets()
-  tickets.value = page.records
+  try {
+    const page = await apiClient.adminTickets()
+    tickets.value = page.records
+  } catch {
+    // 全局 API 错误监听负责提示，列表保留上一次成功结果。
+  }
 }
 
 async function open(ticket: TicketDto) {
-  detail.value = await apiClient.adminTicketDetail(ticket.id)
+  try {
+    detail.value = await apiClient.adminTicketDetail(ticket.id)
+  } catch {
+    // 详情读取失败时不清空当前详情。
+  }
 }
 
 async function assign() {
-  if (detail.value) detail.value = await apiClient.assignTicket(detail.value.ticket.id, assignedTo.value)
+  try {
+    if (detail.value) detail.value = await apiClient.assignTicket(detail.value.ticket.id, assignedTo.value)
+  } catch {
+    // 分配失败时保留当前处理人输入。
+  }
 }
 
 async function sendReply() {
-  if (detail.value) detail.value = await apiClient.adminReplyTicket(detail.value.ticket.id, reply.value)
-  reply.value = ''
+  try {
+    if (detail.value) detail.value = await apiClient.adminReplyTicket(detail.value.ticket.id, reply.value)
+    reply.value = ''
+  } catch {
+    // 回复失败时保留输入内容。
+  }
 }
 
 async function changeStatus() {
-  if (detail.value) detail.value = await apiClient.changeTicketStatus(detail.value.ticket.id, status.value, '管理端处理')
+  try {
+    if (detail.value) detail.value = await apiClient.changeTicketStatus(detail.value.ticket.id, status.value, '管理端处理')
+  } catch {
+    // 状态变更失败时保留当前详情。
+  }
 }
 
 onMounted(load)

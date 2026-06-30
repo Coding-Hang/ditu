@@ -27,6 +27,18 @@ export const useAdminAuthStore = defineStore('admin-auth', {
       localStorage.setItem('ditu.admin.accessToken', this.accessToken)
       localStorage.setItem('ditu.admin.refreshToken', this.refreshToken)
       this.hydrateClient()
+    },
+    async loadMe() {
+      this.hydrateClient()
+      this.user = await apiClient.me()
+    },
+    logout() {
+      this.accessToken = ''
+      this.refreshToken = ''
+      this.user = null
+      localStorage.removeItem('ditu.admin.accessToken')
+      localStorage.removeItem('ditu.admin.refreshToken')
+      apiClient.setTokens(null)
     }
   }
 })

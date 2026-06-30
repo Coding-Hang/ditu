@@ -8,16 +8,24 @@ const profiles = ref<CustomerServiceProfileDto[]>([])
 const router = useRouter()
 
 onMounted(async () => {
-  profiles.value = await apiClient.customerServices()
+  try {
+    profiles.value = await apiClient.customerServices()
+  } catch {
+    // 全局 API 错误监听负责给用户提示。
+  }
 })
 
 async function create(profile: CustomerServiceProfileDto) {
-  const detail = await apiClient.createTicket({
-    serviceProfileId: profile.id,
-    title: `${profile.roleName}人工服务`,
-    content: `请 ${profile.name} 协助处理。`
-  })
-  await router.push(`/tickets/${detail.ticket.id}`)
+  try {
+    const detail = await apiClient.createTicket({
+      serviceProfileId: profile.id,
+      title: `${profile.roleName}人工服务`,
+      content: `请 ${profile.name} 协助处理。`
+    })
+    await router.push(`/tickets/${detail.ticket.id}`)
+  } catch {
+    // 创建失败时保留当前页面，错误由全局监听展示。
+  }
 }
 </script>
 

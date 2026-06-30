@@ -9,8 +9,12 @@ const plans = ref<PlanDto[]>([])
 const auth = useAuthStore()
 
 onMounted(async () => {
-  if (!auth.user && auth.accessToken) await auth.loadMe()
-  plans.value = await apiClient.plans()
+  try {
+    if (!auth.user && auth.accessToken) await auth.loadMe()
+    plans.value = await apiClient.plans()
+  } catch {
+    // 业务错误由全局监听展示；页面保持可恢复状态。
+  }
 })
 </script>
 

@@ -4,15 +4,21 @@ import type { PlanDto } from '@ditu/types'
 import { onMounted, ref } from 'vue'
 
 const plans = ref<PlanDto[]>([])
+const errorMessage = ref('')
 
 onMounted(async () => {
-  plans.value = await apiClient.plans()
+  try {
+    plans.value = await apiClient.plans()
+  } catch {
+    errorMessage.value = '套餐加载失败'
+  }
 })
 </script>
 
 <template>
   <section class="page">
     <h3>套餐</h3>
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     <div v-for="plan in plans" :key="plan.code" class="card">
       <strong>{{ plan.name }}</strong>
       <p>{{ plan.description }}</p>

@@ -7,19 +7,31 @@ const users = ref<UserSummary[]>([])
 const form = reactive({ username: '', password: 'InitPass123!', displayName: '', phone: '', planCode: 'PRO', quotaTotal: 300 })
 
 async function load() {
-  const page = await apiClient.adminUsers()
-  users.value = page.records
+  try {
+    const page = await apiClient.adminUsers()
+    users.value = page.records
+  } catch {
+    // 全局 API 错误监听负责提示，列表保留上一次成功数据。
+  }
 }
 
 async function createUser() {
-  await apiClient.adminCreateUser(form)
-  await load()
+  try {
+    await apiClient.adminCreateUser(form)
+    await load()
+  } catch {
+    // 创建失败时保留表单，方便管理员修正后重试。
+  }
 }
 
 async function setStatus(user: UserSummary) {
-  if (user.status === 'ACTIVE') await apiClient.adminDisableUser(user.id)
-  else await apiClient.adminEnableUser(user.id)
-  await load()
+  try {
+    if (user.status === 'ACTIVE') await apiClient.adminDisableUser(user.id)
+    else await apiClient.adminEnableUser(user.id)
+    await load()
+  } catch {
+    // 状态切换失败时保留当前列表。
+  }
 }
 
 onMounted(load)

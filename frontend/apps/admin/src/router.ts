@@ -20,3 +20,14 @@ export const router = createRouter({
     { path: '/plans', component: PlansView }
   ]
 })
+
+router.beforeEach(to => {
+  const hasToken = Boolean(localStorage.getItem('ditu.admin.accessToken'))
+  if (!hasToken && to.path !== '/login') {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  if (hasToken && to.path === '/login') {
+    return { path: '/users' }
+  }
+  return true
+})
