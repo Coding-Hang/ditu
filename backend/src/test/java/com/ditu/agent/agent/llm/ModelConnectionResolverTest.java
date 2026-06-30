@@ -47,6 +47,7 @@ class ModelConnectionResolverTest {
 
   private DituProperties properties() {
     return new DituProperties(
+        new DituProperties.Agent("mock"),
         new DituProperties.Auth("unit-test-secret", 7200, 604800),
         new DituProperties.Crypto("crypto-secret"),
         new DituProperties.Model("https://platform.example/v1", "platform-model", "BEARER", "sk-platform"),

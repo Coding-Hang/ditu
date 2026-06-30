@@ -1,7 +1,9 @@
 backend/target/
 frontend/node_modules/
+frontend/apps/*/node_modules/
 frontend/apps/*/dist/
 frontend/apps/*/vite.*.log
 data/
+logs/
 .env
 *.log

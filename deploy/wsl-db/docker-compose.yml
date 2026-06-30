@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: ${PGVECTOR_IMAGE:-docker.m.daocloud.io/pgvector/pgvector:pg15}
+    container_name: ditu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ditu}
+      POSTGRES_USER: ${POSTGRES_USER:-ditu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ditu}
+      TZ: Asia/Shanghai
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ditu} -d ${POSTGRES_DB:-ditu}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes: {}

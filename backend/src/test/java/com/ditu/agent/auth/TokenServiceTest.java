@@ -11,6 +11,7 @@ class TokenServiceTest {
   @Test
   void accessTokenCarriesUserRoleAndRejectsWrongType() {
     var properties = new DituProperties(
+        new DituProperties.Agent("mock"),
         new DituProperties.Auth("unit-test-secret", 7200, 604800),
         new DituProperties.Crypto("crypto"),
         new DituProperties.Model("http://default", "default-model", "NONE", ""),

@@ -24,6 +24,8 @@ management:
         include: health,metrics
 
 ditu:
+  agent:
+    runtime: ${DITU_AGENT_RUNTIME:mock}
   auth:
     token-secret: ${DITU_AUTH_TOKEN_SECRET:change-me-to-a-long-production-secret}
     access-token-seconds: ${DITU_ACCESS_TOKEN_SECONDS:7200}

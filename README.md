@@ -27,6 +27,18 @@ pnpm build
 
 ## 本地启动
 
+推荐使用 WSL 启动 PostgreSQL/pgvector，并在 Windows 侧启动后端和三端前端：
+
+```powershell
+.\scripts\start-local-wsl.ps1
+```
+
+单独测试 OpenAI-compatible 大模型接口：
+
+```powershell
+.\scripts\test-model.ps1
+```
+
 需要 Docker 时：
 
 ```bash

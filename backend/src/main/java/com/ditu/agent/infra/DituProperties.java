@@ -8,7 +8,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>模型链接、密钥、Embedding 和文件存储都从环境变量进入，生产环境不会把真实凭据写入仓库。</p>
  */
 @ConfigurationProperties(prefix = "ditu")
-public record DituProperties(Auth auth, Crypto crypto, Model model, Embedding embedding, String fileStorageRoot) {
+public record DituProperties(Agent agent, Auth auth, Crypto crypto, Model model, Embedding embedding,
+                             String fileStorageRoot) {
+
+  public record Agent(String runtime) {
+  }
 
   public record Auth(String tokenSecret, long accessTokenSeconds, long refreshTokenSeconds) {
   }
